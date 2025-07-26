@@ -35,7 +35,11 @@ app.post('/api/services', async (req, res) => {
     try {
         const { name, price, description } = req.body;
         const service = await prisma.service.create({
-            data: { name, price, description }
+            data: {
+                name,
+                price: parseFloat(price),
+                description
+            }
         });
         res.status(201).json(service);
     } catch (error) {
@@ -50,7 +54,11 @@ app.put('/api/services/:id', async (req, res) => {
         const { name, price, description } = req.body;
         const updated = await prisma.service.update({
             where: { id: parseInt(id) },
-            data: { name, price, description }
+            data: {
+                name,
+                price: parseFloat(price),
+                description
+            }
         });
         res.json(updated);
     } catch (error) {
