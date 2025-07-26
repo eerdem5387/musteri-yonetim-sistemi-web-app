@@ -35,7 +35,7 @@ export default function CustomersPage() {
     email: ''
   });
 
-  const API_URL = 'https://beauty-backend-nsbwbgcbgq-ew.a.run.app';
+  const API_URL = 'https://api.guzellikmerkezi.xyz';
 
   const fetchCustomers = useCallback(async () => {
     try {

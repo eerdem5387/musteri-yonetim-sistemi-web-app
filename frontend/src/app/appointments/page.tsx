@@ -77,7 +77,7 @@ function AppointmentsContent() {
     status: 'pending',
   });
 
-  const API_URL = 'https://beauty-backend-nsbwbgcbgq-ew.a.run.app';
+  const API_URL = 'https://api.guzellikmerkezi.xyz';
 
   const fetchData = useCallback(async () => {
     try {

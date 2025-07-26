@@ -34,7 +34,7 @@ export default function ExpertsPage() {
     workDays: [] as string[]
   });
 
-  const API_URL = 'https://beauty-backend-nsbwbgcbgq-ew.a.run.app';
+  const API_URL = 'https://api.guzellikmerkezi.xyz';
 
   const fetchExperts = useCallback(async () => {
     try {

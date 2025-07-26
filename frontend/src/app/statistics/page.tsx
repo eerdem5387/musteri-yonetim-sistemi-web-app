@@ -52,7 +52,7 @@ export default function StatisticsPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = 'https://beauty-backend-nsbwbgcbgq-ew.a.run.app';
+  const API_URL = 'https://api.guzellikmerkezi.xyz';
 
   const fetchStats = useCallback(async () => {
     try {

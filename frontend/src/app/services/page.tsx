@@ -33,7 +33,7 @@ export default function ServicesPage() {
     description: ''
   });
 
-  const API_URL = 'https://beauty-backend-nsbwbgcbgq-ew.a.run.app';
+  const API_URL = 'https://api.guzellikmerkezi.xyz';
 
   const fetchServices = useCallback(async () => {
     try {
