@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -11,49 +12,47 @@ datasource db {
 }
 
 model Service {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   name        String
   price       Float
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   appointments Appointment[]
 }
 
 model Expert {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   name        String
   specialty   String
-  workDays    String[] // JSON array of work days
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  workDays    String[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   appointments Appointment[]
 }
 
 model Customer {
-  id        Int      @id @default(autoincrement())
-  name      String
-  phone     String   @unique
-  email     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int           @id @default(autoincrement())
+  name        String
+  phone       String        @unique
+  email       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   appointments Appointment[]
 }
 
 model Appointment {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   date       DateTime
   time       String
-  status     String   @default("confirmed") // confirmed, cancelled, completed
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
+  status     String    @default("pending")
   customerId Int
-  customer   Customer @relation(fields: [customerId], references: [id])
-  
   serviceId  Int
-  service    Service  @relation(fields: [serviceId], references: [id])
-  
   expertId   Int
-  expert     Expert   @relation(fields: [expertId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  service    Service   @relation(fields: [serviceId], references: [id])
+  expert     Expert    @relation(fields: [expertId], references: [id])
 }
