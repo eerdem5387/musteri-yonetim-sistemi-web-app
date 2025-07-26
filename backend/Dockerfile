@@ -20,8 +20,8 @@ COPY . .
 EXPOSE 4000
 
 # Migration ve seed script'i oluştur
-RUN echo '#!/bin/sh\nnpx prisma migrate deploy\nnpx prisma db seed\nnpm start' > /app/start.sh
-RUN chmod +x /app/start.sh
+RUN echo '#!/bin/sh\nnpx prisma migrate deploy\nnpx prisma db seed\nnpm start' > start.sh
+RUN chmod +x start.sh
 
 # Application başlat
-CMD ["/app/start.sh"] 
+CMD ["./start.sh"] 
