@@ -4,7 +4,7 @@
   "description": "Müşteri Yönetim Sistemi Backend API",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "npx prisma migrate deploy && npx prisma db seed && node index.js",
     "dev": "nodemon index.js",
     "seed": "node prisma/seed.js",
     "test": "echo \"Error: no test specified\" && exit 1"

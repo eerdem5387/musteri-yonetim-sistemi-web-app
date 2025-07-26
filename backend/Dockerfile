@@ -19,9 +19,5 @@ COPY . .
 # Port expose et
 EXPOSE 4000
 
-# Migration ve seed script'i oluştur
-RUN echo '#!/bin/sh\nnpx prisma migrate deploy\nnpx prisma db seed\nnpm start' > start.sh
-RUN chmod +x start.sh
-
 # Application başlat
-CMD ["./start.sh"] 
+CMD ["npm", "start"] 
