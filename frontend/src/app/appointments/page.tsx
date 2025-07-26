@@ -77,7 +77,7 @@ function AppointmentsContent() {
     status: 'pending',
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = 'https://beauty-backend-nsbwbgcbgq-ew.a.run.app';
 
   const fetchData = useCallback(async () => {
     try {

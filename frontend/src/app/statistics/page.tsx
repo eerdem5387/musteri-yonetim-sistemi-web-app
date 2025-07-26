@@ -52,7 +52,7 @@ export default function StatisticsPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = 'https://beauty-backend-nsbwbgcbgq-ew.a.run.app';
 
   const fetchStats = useCallback(async () => {
     try {
