@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Float
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  appointments Appointment[]
+}
+
+model Expert {
+  id          Int      @id @default(autoincrement())
+  name        String
+  specialty   String
+  workDays    String[] // JSON array of work days
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  appointments Appointment[]
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  appointments Appointment[]
+}
+
+model Appointment {
+  id         Int      @id @default(autoincrement())
+  date       DateTime
+  time       String
+  status     String   @default("confirmed") // confirmed, cancelled, completed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id])
+  
+  serviceId  Int
+  service    Service  @relation(fields: [serviceId], references: [id])
+  
+  expertId   Int
+  expert     Expert   @relation(fields: [expertId], references: [id])
+}
