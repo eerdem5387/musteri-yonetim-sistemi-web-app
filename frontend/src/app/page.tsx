@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
-import { 
-  FaUsers, 
-  FaUserTie, 
-  FaCalendarAlt, 
+import {
+  FaUsers,
+  FaUserTie,
+  FaCalendarAlt,
   FaConciergeBell,
   FaPlus,
   FaChartBar,
@@ -37,30 +37,7 @@ export default function HomePage() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  // Sayfa odaklandığında istatistikleri yenile
-  useEffect(() => {
-    const handleFocus = () => {
-      fetchStats();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
-
-  // Her 30 saniyede bir otomatik güncelle
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchStats();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const [servicesRes, expertsRes, customersRes, appointmentsRes] = await Promise.all([
         axios.get('http://localhost:4000/api/services'),
@@ -71,18 +48,18 @@ export default function HomePage() {
 
       const appointments = appointmentsRes.data;
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Bugünkü randevuları doğru şekilde filtrele
-      const todayAppointments = appointments.filter((apt: any) => {
+      const todayAppointments = appointments.filter((apt: { date: string }) => {
         const appointmentDate = new Date(apt.date).toISOString().split('T')[0];
         return appointmentDate === today;
       });
-      
-      const confirmedAppointments = appointments.filter((apt: any) => 
+
+      const confirmedAppointments = appointments.filter((apt: { status: string }) =>
         apt.status === 'confirmed'
       ).length;
-      
-      const pendingAppointments = appointments.filter((apt: any) => 
+
+      const pendingAppointments = appointments.filter((apt: { status: string }) =>
         apt.status === 'pending'
       ).length;
 
@@ -100,7 +77,30 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  // Sayfa odaklandığında istatistikleri yenile
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchStats();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchStats]);
+
+  // Her 30 saniyede bir otomatik güncelle
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchStats();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchStats]);
 
   if (loading) {
     return (
@@ -245,8 +245,8 @@ export default function HomePage() {
             Hızlı İşlemler
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link 
-              href="/services" 
+            <Link
+              href="/services"
               className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
             >
               <FaConciergeBell className="h-6 w-6 text-blue-600 mr-3" />
@@ -256,8 +256,8 @@ export default function HomePage() {
               </div>
             </Link>
 
-            <Link 
-              href="/experts" 
+            <Link
+              href="/experts"
               className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
             >
               <FaUserTie className="h-6 w-6 text-green-600 mr-3" />
@@ -267,8 +267,8 @@ export default function HomePage() {
               </div>
             </Link>
 
-            <Link 
-              href="/customers" 
+            <Link
+              href="/customers"
               className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
             >
               <FaUsers className="h-6 w-6 text-purple-600 mr-3" />
@@ -278,8 +278,8 @@ export default function HomePage() {
               </div>
             </Link>
 
-            <Link 
-              href="/appointments" 
+            <Link
+              href="/appointments"
               className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
             >
               <FaCalendarAlt className="h-6 w-6 text-orange-600 mr-3" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -35,11 +35,7 @@ export default function ServicesPage() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-  useEffect(() => {
-    fetchServices();
-  }, []);
-
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/api/services`);
       setServices(response.data);
@@ -48,7 +44,11 @@ export default function ServicesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +65,8 @@ export default function ServicesPage() {
       setFormData({ name: '', price: '', description: '' });
       setEditingService(null);
       fetchServices();
-    } catch (error: any) {
-      if (error.response?.status === 400) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
         toast.error(error.response.data.message || 'Bu hizmete ait randevular bulunduğu için silinemez.');
       } else {
         toast.error('Bir hata oluştu!');
@@ -93,8 +93,8 @@ export default function ServicesPage() {
       await axios.delete(`http://localhost:4000/api/services/${id}`);
       toast.success('Hizmet başarıyla silindi!');
       fetchServices();
-    } catch (error: any) {
-      if (error.response?.status === 400) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
         toast.error(error.response.data.message || 'Bu hizmete ait randevular bulunduğu için silinemez.');
       } else {
         toast.error('Hizmet silinirken bir hata oluştu!');

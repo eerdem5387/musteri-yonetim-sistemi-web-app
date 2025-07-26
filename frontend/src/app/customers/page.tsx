@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -37,11 +37,7 @@ export default function CustomersPage() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/api/customers`);
       setCustomers(response.data);
@@ -50,7 +46,11 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +67,8 @@ export default function CustomersPage() {
       setFormData({ name: '', phone: '', email: '' });
       setEditingCustomer(null);
       fetchCustomers();
-    } catch (error: any) {
-      if (error.response?.status === 400) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
         toast.error(error.response.data.message || 'Bu müşteriye ait randevular bulunduğu için silinemez.');
       } else {
         toast.error('Bir hata oluştu!');
@@ -95,8 +95,8 @@ export default function CustomersPage() {
       await axios.delete(`http://localhost:4000/api/customers/${id}`);
       toast.success('Müşteri başarıyla silindi!');
       fetchCustomers();
-    } catch (error: any) {
-      if (error.response?.status === 400) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
         toast.error(error.response.data.message || 'Bu müşteriye ait randevular bulunduğu için silinemez.');
       } else {
         toast.error('Müşteri silinirken bir hata oluştu!');
@@ -153,16 +153,15 @@ export default function CustomersPage() {
         {/* Form */}
         {showForm && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <h2 className="text-xl text-black font-semibold mb-4 flex items-center">
               <FaUsers className="mr-2 text-purple-600" />
               {editingCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <FaUser className="inline mr-1" />
-                    Ad Soyad
+                  <label className="block text-sm font-medium text-gray-700 flex items-center">
+                    <FaUser className="mr-1 text-blue-600" /> Müşteri Adı
                   </label>
                   <input
                     type="text"
@@ -195,9 +194,8 @@ export default function CustomersPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <FaEnvelope className="inline mr-1" />
-                  E-posta (İsteğe Bağlı)
+                <label className="block text-sm font-medium text-gray-700 flex items-center">
+                  <FaEnvelope className="mr-1 text-blue-600" /> E-posta Adresi
                 </label>
                 <input
                   type="email"
@@ -245,10 +243,10 @@ export default function CustomersPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Müşteri
+                      Müşteri Adı
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      İletişim
+                      Telefon
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       E-posta
@@ -271,13 +269,13 @@ export default function CustomersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 flex items-center">
-                          <FaPhone className="mr-2 text-green-600" />
+                          <FaPhone className="mr-1" />
                           {customer.phone}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <FaEnvelope className="mr-2 text-blue-600" />
+                        <div className="text-sm text-gray-900 flex items-center">
+                          <FaEnvelope className="mr-1" />
                           {customer.email || '-'}
                         </div>
                       </td>

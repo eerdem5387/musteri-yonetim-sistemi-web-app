@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { 
   FaCalendarAlt, 
   FaPlus, 
@@ -20,26 +20,28 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
   FaTimesCircle,
-  FaFilter,
   FaEye
 } from 'react-icons/fa';
+
+interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  email?: string;
+}
 
 interface Service {
   id: number;
   name: string;
   price: number;
+  description?: string;
 }
 
 interface Expert {
   id: number;
   name: string;
   specialty: string;
-}
-
-interface Customer {
-  id: number;
-  name: string;
-  phone: string;
+  workDays?: string[];
 }
 
 interface Appointment {
@@ -55,14 +57,14 @@ interface Appointment {
   expert: Expert;
 }
 
-export default function AppointmentsPage() {
+function AppointmentsContent() {
   const searchParams = useSearchParams();
   const filter = searchParams.get('filter');
   
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [experts, setExperts] = useState<Expert[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -72,59 +74,49 @@ export default function AppointmentsPage() {
     customerId: '',
     serviceId: '',
     expertId: '',
-    status: 'pending', // Varsayılan olarak 'pending'
+    status: 'pending',
   });
-
-  const timeSlots = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-    '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
-  ];
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-  useEffect(() => {
-    fetchData();
-  }, [filter]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const [appointmentsRes, servicesRes, expertsRes, customersRes] = await Promise.all([
+      const [appointmentsRes, customersRes, servicesRes, expertsRes] = await Promise.all([
         axios.get(`${API_URL}/api/appointments`),
+        axios.get(`${API_URL}/api/customers`),
         axios.get(`${API_URL}/api/services`),
-        axios.get(`${API_URL}/api/experts`),
-        axios.get(`${API_URL}/api/customers`)
+        axios.get(`${API_URL}/api/experts`)
       ]);
 
       let filteredAppointments = appointmentsRes.data;
 
-      // Filtreleme işlemleri
+      // Filtreleme
       if (filter === 'today') {
         const today = new Date().toISOString().split('T')[0];
-        filteredAppointments = appointmentsRes.data.filter((apt: any) => {
+        filteredAppointments = appointmentsRes.data.filter((apt: Appointment) => {
           const appointmentDate = new Date(apt.date).toISOString().split('T')[0];
           return appointmentDate === today;
         });
       } else if (filter === 'confirmed') {
-        filteredAppointments = appointmentsRes.data.filter((apt: any) => 
-          apt.status === 'confirmed'
-        );
+        filteredAppointments = appointmentsRes.data.filter((apt: Appointment) => apt.status === 'confirmed');
       } else if (filter === 'pending') {
-        filteredAppointments = appointmentsRes.data.filter((apt: any) => 
-          apt.status === 'pending'
-        );
+        filteredAppointments = appointmentsRes.data.filter((apt: Appointment) => apt.status === 'pending');
       }
 
       setAppointments(filteredAppointments);
+      setCustomers(customersRes.data);
       setServices(servicesRes.data);
       setExperts(expertsRes.data);
-      setCustomers(customersRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, filter]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,23 +130,14 @@ export default function AppointmentsPage() {
         toast.success('Randevu başarıyla oluşturuldu!');
       }
       
-      setFormData({
-        date: '',
-        time: '',
-        customerId: '',
-        serviceId: '',
-        expertId: '',
-        status: 'confirmed'
-      });
+      setFormData({ date: '', time: '', customerId: '', serviceId: '', expertId: '', status: 'pending' });
       setEditingAppointment(null);
       fetchData();
-    } catch (error: any) {
-      if (error.response?.status === 409) {
-        toast.error('Bu tarih ve saatte seçilen uzmanın başka bir randevusu bulunmaktadır!');
-      } else if (error.response?.status === 400) {
-        toast.error(error.response.data.message || 'Bir hata oluştu!');
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        toast.error('Çakışma var! Bu tarih ve saatte uzman müsait değil.');
       } else {
-        toast.error('Randevu oluşturulurken bir hata oluştu!');
+        toast.error('Bir hata oluştu!');
       }
     }
   };
@@ -181,13 +164,13 @@ export default function AppointmentsPage() {
       await axios.delete(`http://localhost:4000/api/appointments/${id}`);
       toast.success('Randevu başarıyla silindi!');
       fetchData();
-    } catch (error: any) {
+    } catch {
       toast.error('Randevu silinirken bir hata oluştu!');
     }
   };
 
   const handleCancel = () => {
-    setFormData({ date: '', time: '', customerId: '', serviceId: '', expertId: '', status: 'confirmed' });
+    setFormData({ date: '', time: '', customerId: '', serviceId: '', expertId: '', status: 'pending' });
     setShowForm(false);
     setEditingAppointment(null);
   };
@@ -208,7 +191,7 @@ export default function AppointmentsPage() {
 
       toast.success(`Randevu durumu ${getStatusText(newStatus)} olarak güncellendi!`);
       fetchData();
-    } catch (error: any) {
+    } catch {
       toast.error('Durum güncellenirken bir hata oluştu!');
     }
   };
@@ -263,6 +246,8 @@ export default function AppointmentsPage() {
         return <FaCheckCircle className="h-4 w-4 text-green-600" />;
       case 'pending':
         return <FaExclamationTriangle className="h-4 w-4 text-yellow-600" />;
+      case 'completed':
+        return <FaCheckCircle className="h-4 w-4 text-blue-600" />;
       case 'cancelled':
         return <FaTimesCircle className="h-4 w-4 text-red-600" />;
       default:
@@ -316,11 +301,11 @@ export default function AppointmentsPage() {
   const getPageDescription = () => {
     switch (filter) {
       case 'today':
-        return 'Bugün için planlanmış randevular';
+        return 'Bugün için planlanan randevular';
       case 'confirmed':
-        return 'Onaylanmış randevular listesi';
+        return 'Onaylanmış randevular';
       case 'pending':
-        return 'Bekleyen randevular listesi';
+        return 'Onay bekleyen randevular';
       default:
         return 'Güzellik merkezi randevularını yönetin';
     }
@@ -354,9 +339,9 @@ export default function AppointmentsPage() {
                 </p>
               </div>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
               {filter && (
-                <Link 
+                <Link
                   href="/appointments"
                   className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center"
                 >
@@ -380,12 +365,12 @@ export default function AppointmentsPage() {
         {/* Form */}
         {showForm && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <h2 className="text-xl text-black font-semibold mb-4 flex items-center">
               <FaCalendarAlt className="mr-2 text-orange-600" />
               {editingAppointment ? 'Randevu Düzenle' : 'Yeni Randevu Oluştur'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <FaCalendarAlt className="inline mr-1" />
@@ -404,16 +389,27 @@ export default function AppointmentsPage() {
                     <FaClock className="inline mr-1" />
                     Saat
                   </label>
-                  <select
+                  <input
+                    type="time"
                     value={formData.time}
                     onChange={(e) => setFormData({...formData, time: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                     required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Durum
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
-                    <option value="">Saat Seçin</option>
-                    {timeSlots.map((time) => (
-                      <option key={time} value={time}>{time}</option>
-                    ))}
+                    <option value="confirmed">Onaylandı</option>
+                    <option value="pending">Bekliyor</option>
+                    <option value="completed">Tamamlandı</option>
+                    <option value="cancelled">İptal Edildi</option>
                   </select>
                 </div>
               </div>
@@ -431,7 +427,9 @@ export default function AppointmentsPage() {
                   >
                     <option value="">Müşteri Seçin</option>
                     {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>{customer.name}</option>
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.phone}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -448,7 +446,9 @@ export default function AppointmentsPage() {
                   >
                     <option value="">Hizmet Seçin</option>
                     {services.map((service) => (
-                      <option key={service.id} value={service.id}>{service.name}</option>
+                      <option key={service.id} value={service.id}>
+                        {service.name} - {service.price} TL
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -465,28 +465,13 @@ export default function AppointmentsPage() {
                   >
                     <option value="">Uzman Seçin</option>
                     {experts.map((expert) => (
-                      <option key={expert.id} value={expert.id}>{expert.name}</option>
+                      <option key={expert.id} value={expert.id}>
+                        {expert.name} - {expert.specialty}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
-              {editingAppointment && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Durum
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option value="confirmed">Onaylandı</option>
-                    <option value="pending">Bekliyor</option>
-                    <option value="completed">Tamamlandı</option>
-                    <option value="cancelled">İptal Edildi</option>
-                  </select>
-                </div>
-              )}
               <div className="flex space-x-3">
                 <button
                   type="submit"
@@ -526,13 +511,16 @@ export default function AppointmentsPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Randevu
+                      Tarih & Saat
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Müşteri
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Hizmet & Uzman
+                      Hizmet
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Uzman
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Durum
@@ -546,48 +534,58 @@ export default function AppointmentsPage() {
                   {appointments.map((appointment) => (
                     <tr key={appointment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <FaCalendarAlt className="h-5 w-5 text-orange-600 mr-3" />
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {new Date(appointment.date).toLocaleDateString('tr-TR')}
-                            </div>
-                            <div className="text-sm text-gray-500 flex items-center">
-                              <FaClock className="mr-1" />
-                              {appointment.time}
-                            </div>
+                        <div className="text-sm text-gray-900">
+                          <div className="flex items-center">
+                            <FaCalendarAlt className="h-4 w-4 text-orange-600 mr-2" />
+                            {new Date(appointment.date).toLocaleDateString('tr-TR')}
+                          </div>
+                          <div className="flex items-center mt-1">
+                            <FaClock className="h-4 w-4 text-gray-500 mr-2" />
+                            {appointment.time}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <FaUser className="h-4 w-4 text-purple-600 mr-2" />
-                          <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm text-gray-900">
+                          <div className="flex items-center">
+                            <FaUser className="h-4 w-4 text-purple-600 mr-2" />
                             {appointment.customer.name}
                           </div>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.customer.phone}
+                          <div className="text-sm text-gray-500 mt-1">
+                            {appointment.customer.phone}
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          <div className="flex items-center mb-1">
+                          <div className="flex items-center">
                             <FaConciergeBell className="h-4 w-4 text-blue-600 mr-2" />
                             {appointment.service.name}
                           </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {appointment.service.price} TL
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
                           <div className="flex items-center">
                             <FaUserTie className="h-4 w-4 text-green-600 mr-2" />
                             {appointment.expert.name}
                           </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {appointment.expert.specialty}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                          {getStatusIcon(appointment.status)}
-                          <span className="ml-1">{getStatusText(appointment.status)}</span>
-                        </span>
-                        {getStatusChangeButtons(appointment)}
+                        <div className="flex items-center">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                            {getStatusIcon(appointment.status)}
+                            <span className="ml-1">{getStatusText(appointment.status)}</span>
+                          </span>
+                          {getStatusChangeButtons(appointment)}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
@@ -616,5 +614,17 @@ export default function AppointmentsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AppointmentsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    }>
+      <AppointmentsContent />
+    </Suspense>
   );
 } 

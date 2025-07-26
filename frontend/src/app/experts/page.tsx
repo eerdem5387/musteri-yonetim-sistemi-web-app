@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -20,7 +20,7 @@ interface Expert {
   id: number;
   name: string;
   specialty: string;
-  workDays: string[];
+  workDays?: string[];
 }
 
 export default function ExpertsPage() {
@@ -34,17 +34,9 @@ export default function ExpertsPage() {
     workDays: [] as string[]
   });
 
-  const workDayOptions = [
-    'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'
-  ];
-
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-  useEffect(() => {
-    fetchExperts();
-  }, []);
-
-  const fetchExperts = async () => {
+  const fetchExperts = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/api/experts`);
       setExperts(response.data);
@@ -53,16 +45,11 @@ export default function ExpertsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
 
-  const handleWorkDayChange = (day: string) => {
-    setFormData(prev => ({
-      ...prev,
-      workDays: prev.workDays.includes(day)
-        ? prev.workDays.filter(d => d !== day)
-        : [...prev.workDays, day]
-    }));
-  };
+  useEffect(() => {
+    fetchExperts();
+  }, [fetchExperts]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +66,8 @@ export default function ExpertsPage() {
       setFormData({ name: '', specialty: '', workDays: [] });
       setEditingExpert(null);
       fetchExperts();
-    } catch (error: any) {
-      if (error.response?.status === 400) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
         toast.error(error.response.data.message || 'Bu uzmana ait randevular bulunduğu için silinemez.');
       } else {
         toast.error('Bir hata oluştu!');
@@ -107,8 +94,8 @@ export default function ExpertsPage() {
       await axios.delete(`http://localhost:4000/api/experts/${id}`);
       toast.success('Uzman başarıyla silindi!');
       fetchExperts();
-    } catch (error: any) {
-      if (error.response?.status === 400) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
         toast.error(error.response.data.message || 'Bu uzmana ait randevular bulunduğu için silinemez.');
       } else {
         toast.error('Uzman silinirken bir hata oluştu!');
@@ -120,6 +107,15 @@ export default function ExpertsPage() {
     setFormData({ name: '', specialty: '', workDays: [] });
     setShowForm(false);
     setEditingExpert(null);
+  };
+
+  const handleWorkDayChange = (day: string) => {
+    setFormData(prev => ({
+      ...prev,
+      workDays: prev.workDays.includes(day)
+        ? prev.workDays.filter(d => d !== day)
+        : [...prev.workDays, day]
+    }));
   };
 
   if (loading) {
@@ -165,7 +161,7 @@ export default function ExpertsPage() {
         {/* Form */}
         {showForm && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <h2 className="text-xl text-black font-semibold mb-4 flex items-center">
               <FaUserTie className="mr-2 text-green-600" />
               {editingExpert ? 'Uzman Düzenle' : 'Yeni Uzman Ekle'}
             </h2>
@@ -173,7 +169,8 @@ export default function ExpertsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ad Soyad
+                    <FaUserTie className="inline mr-1" />
+                    Uzman Adı
                   </label>
                   <input
                     type="text"
@@ -198,24 +195,18 @@ export default function ExpertsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <FaCalendarAlt className="mr-1" />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FaCalendarAlt className="inline mr-1" />
                   Çalışma Günleri
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
                   {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day) => (
-                    <label key={day} className="flex items-center">
+                    <label key={day} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         checked={formData.workDays.includes(day)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({...formData, workDays: [...formData.workDays, day]});
-                          } else {
-                            setFormData({...formData, workDays: formData.workDays.filter(d => d !== day)});
-                          }
-                        }}
-                        className="mr-2 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        onChange={() => handleWorkDayChange(day)}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-sm text-gray-700">{day}</span>
                     </label>
@@ -261,10 +252,10 @@ export default function ExpertsPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Uzman
+                      Uzman Adı
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Uzmanlık
+                      Uzmanlık Alanı
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Çalışma Günleri
@@ -287,20 +278,16 @@ export default function ExpertsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 flex items-center">
-                          <FaStar className="mr-1 text-yellow-500" />
+                          <FaStar className="mr-1" />
                           {expert.specialty}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {expert.workDays.map((day) => (
-                            <span
-                              key={day}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                            >
-                              {day}
-                            </span>
-                          ))}
+                        <div className="text-sm text-gray-500">
+                          {expert.workDays && expert.workDays.length > 0 
+                            ? expert.workDays.join(', ')
+                            : 'Belirtilmemiş'
+                          }
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

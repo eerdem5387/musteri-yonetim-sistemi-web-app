@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
-import { 
+import {
   FaArrowLeft,
   FaChartBar,
   FaCalendarAlt,
@@ -52,11 +52,7 @@ export default function StatisticsPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await axios.get('http://localhost:4000/api/dashboard/stats');
       setStats(response.data);
@@ -65,7 +61,11 @@ export default function StatisticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   if (loading) {
     return (
