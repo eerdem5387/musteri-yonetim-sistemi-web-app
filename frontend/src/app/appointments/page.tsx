@@ -123,10 +123,10 @@ function AppointmentsContent() {
     
     try {
       if (editingAppointment) {
-        await axios.put(`http://localhost:4000/api/appointments/${editingAppointment.id}`, formData);
+        await axios.put(`${API_URL}/api/appointments/${editingAppointment.id}`, formData);
         toast.success('Randevu başarıyla güncellendi!');
       } else {
-        await axios.post('http://localhost:4000/api/appointments', formData);
+        await axios.post(`${API_URL}/api/appointments`, formData);
         toast.success('Randevu başarıyla oluşturuldu!');
       }
       
@@ -161,7 +161,7 @@ function AppointmentsContent() {
     }
 
     try {
-      await axios.delete(`http://localhost:4000/api/appointments/${id}`);
+      await axios.delete(`${API_URL}/api/appointments/${id}`);
       toast.success('Randevu başarıyla silindi!');
       fetchData();
     } catch {
@@ -180,7 +180,7 @@ function AppointmentsContent() {
       const appointment = appointments.find(apt => apt.id === appointmentId);
       if (!appointment) return;
 
-      await axios.put(`http://localhost:4000/api/appointments/${appointmentId}`, {
+      await axios.put(`${API_URL}/api/appointments/${appointmentId}`, {
         date: appointment.date,
         time: appointment.time,
         customerId: appointment.customerId,

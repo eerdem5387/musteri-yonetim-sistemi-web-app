@@ -37,13 +37,15 @@ export default function HomePage() {
   });
   const [loading, setLoading] = useState(true);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
   const fetchStats = useCallback(async () => {
     try {
       const [servicesRes, expertsRes, customersRes, appointmentsRes] = await Promise.all([
-        axios.get('http://localhost:4000/api/services'),
-        axios.get('http://localhost:4000/api/experts'),
-        axios.get('http://localhost:4000/api/customers'),
-        axios.get('http://localhost:4000/api/appointments')
+        axios.get(`${API_URL}/api/services`),
+        axios.get(`${API_URL}/api/experts`),
+        axios.get(`${API_URL}/api/customers`),
+        axios.get(`${API_URL}/api/appointments`)
       ]);
 
       const appointments = appointmentsRes.data;
@@ -77,7 +79,7 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [API_URL]);
 
   useEffect(() => {
     fetchStats();

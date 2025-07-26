@@ -56,10 +56,10 @@ export default function ExpertsPage() {
     
     try {
       if (editingExpert) {
-        await axios.put(`http://localhost:4000/api/experts/${editingExpert.id}`, formData);
+        await axios.put(`${API_URL}/api/experts/${editingExpert.id}`, formData);
         toast.success('Uzman başarıyla güncellendi!');
       } else {
-        await axios.post('http://localhost:4000/api/experts', formData);
+        await axios.post(`${API_URL}/api/experts`, formData);
         toast.success('Uzman başarıyla eklendi!');
       }
       
@@ -91,7 +91,7 @@ export default function ExpertsPage() {
     }
 
     try {
-      await axios.delete(`http://localhost:4000/api/experts/${id}`);
+      await axios.delete(`${API_URL}/api/experts/${id}`);
       toast.success('Uzman başarıyla silindi!');
       fetchExperts();
     } catch (error: unknown) {

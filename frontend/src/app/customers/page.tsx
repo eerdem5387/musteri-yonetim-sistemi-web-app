@@ -57,10 +57,10 @@ export default function CustomersPage() {
     
     try {
       if (editingCustomer) {
-        await axios.put(`http://localhost:4000/api/customers/${editingCustomer.id}`, formData);
+        await axios.put(`${API_URL}/api/customers/${editingCustomer.id}`, formData);
         toast.success('Müşteri başarıyla güncellendi!');
       } else {
-        await axios.post('http://localhost:4000/api/customers', formData);
+        await axios.post(`${API_URL}/api/customers`, formData);
         toast.success('Müşteri başarıyla eklendi!');
       }
       
@@ -92,7 +92,7 @@ export default function CustomersPage() {
     }
 
     try {
-      await axios.delete(`http://localhost:4000/api/customers/${id}`);
+      await axios.delete(`${API_URL}/api/customers/${id}`);
       toast.success('Müşteri başarıyla silindi!');
       fetchCustomers();
     } catch (error: unknown) {

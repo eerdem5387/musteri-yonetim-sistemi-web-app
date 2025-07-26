@@ -52,16 +52,18 @@ export default function StatisticsPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
   const fetchStats = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/dashboard/stats');
+      const response = await axios.get(`${API_URL}/api/dashboard/stats`);
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [API_URL]);
 
   useEffect(() => {
     fetchStats();

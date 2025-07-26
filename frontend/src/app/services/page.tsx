@@ -55,10 +55,10 @@ export default function ServicesPage() {
     
     try {
       if (editingService) {
-        await axios.put(`http://localhost:4000/api/services/${editingService.id}`, formData);
+        await axios.put(`${API_URL}/api/services/${editingService.id}`, formData);
         toast.success('Hizmet başarıyla güncellendi!');
       } else {
-        await axios.post('http://localhost:4000/api/services', formData);
+        await axios.post(`${API_URL}/api/services`, formData);
         toast.success('Hizmet başarıyla eklendi!');
       }
       
@@ -90,7 +90,7 @@ export default function ServicesPage() {
     }
 
     try {
-      await axios.delete(`http://localhost:4000/api/services/${id}`);
+      await axios.delete(`${API_URL}/api/services/${id}`);
       toast.success('Hizmet başarıyla silindi!');
       fetchServices();
     } catch (error: unknown) {
